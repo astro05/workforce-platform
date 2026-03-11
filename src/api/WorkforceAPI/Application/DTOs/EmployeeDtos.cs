@@ -1,4 +1,6 @@
-﻿namespace WorkforceAPI.Application.DTOs;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace WorkforceAPI.Application.DTOs;
 
 public class EmployeeDto
 {
@@ -26,34 +28,89 @@ public class EmployeeDto
 
 public class CreateEmployeeDto
 {
+    [Required]
+    [MaxLength(100)]
     public string FirstName { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
     public string LastName { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(200)]
     public string Email { get; set; } = string.Empty;
+
+    [Range(0, double.MaxValue, ErrorMessage = "Salary must be a positive value.")]
     public decimal Salary { get; set; }
+
+    [Required]
     public DateTime JoiningDate { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "DepartmentId is required.")]
     public int DepartmentId { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "DesignationId is required.")]
     public int DesignationId { get; set; }
+
+    [MaxLength(20)]
     public string? Phone { get; set; }
+
+    [MaxLength(300)]
     public string? Address { get; set; }
+
+    [MaxLength(100)]
     public string? City { get; set; }
+
+    [MaxLength(100)]
     public string? Country { get; set; }
+
+    [MaxLength(500)]
     public string? AvatarUrl { get; set; }
+
     public string[] Skills { get; set; } = [];
 }
 
 public class UpdateEmployeeDto
 {
+    [Required]
+    [MaxLength(100)]
     public string FirstName { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
     public string LastName { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(200)]
     public string Email { get; set; } = string.Empty;
+
+    [Range(0, double.MaxValue, ErrorMessage = "Salary must be a positive value.")]
     public decimal Salary { get; set; }
+
     public bool IsActive { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "DepartmentId is required.")]
     public int DepartmentId { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "DesignationId is required.")]
     public int DesignationId { get; set; }
+
+    [MaxLength(20)]
     public string? Phone { get; set; }
+
+    [MaxLength(300)]
     public string? Address { get; set; }
+
+    [MaxLength(100)]
     public string? City { get; set; }
+
+    [MaxLength(100)]
     public string? Country { get; set; }
+
+    [MaxLength(500)]
     public string? AvatarUrl { get; set; }
+
     public string[] Skills { get; set; } = [];
 }

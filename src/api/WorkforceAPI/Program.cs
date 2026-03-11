@@ -1,8 +1,5 @@
-using WorkforceAPI.Application.DTOs;
-using WorkforceAPI.Application.Services;
+using WorkforceAPI.API.Middleware;
 using WorkforceAPI.Infrastructure.Persistence.MsSqlServer;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +13,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ── CORS (for React frontend) ─────────────────────────────
+// ── CORS ──────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -35,7 +32,8 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(db);
 }
 
-// ── Middleware ────────────────────────────────────────────
+// ── Middleware pipeline ───────────────────────────────────
+app.UseMiddleware<ExceptionMiddleware>();    // ← global error handler
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowFrontend");
