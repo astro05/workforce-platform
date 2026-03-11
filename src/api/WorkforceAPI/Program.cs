@@ -1,35 +1,44 @@
-using Microsoft.EntityFrameworkCore;
+using WorkforceAPI.Application.DTOs;
+using WorkforceAPI.Application.Services;
 using WorkforceAPI.Infrastructure.Persistence.MsSqlServer;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext - SQL Server
-builder.Services.AddDbContext<WorkforceDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("SqlServer"),
-        sql => sql.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(10),
-            errorNumbersToAdd: null
-        )
-    )
+// ── Persistence ───────────────────────────────────────────
+builder.Services.AddSqlServerPersistence(
+    builder.Configuration.GetConnectionString("SqlServer")!
 );
 
+// ── API ───────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// ── CORS (for React frontend) ─────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+    );
+});
+
 var app = builder.Build();
 
-// ── Auto migrate + seed on startup ───────────────────────
+// ── Migrate + Seed ────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<WorkforceDbContext>();
     await DbSeeder.SeedAsync(db);
 }
 
+// ── Middleware ────────────────────────────────────────────
 app.UseSwagger();
 app.UseSwaggerUI();
+app.UseCors("AllowFrontend");
 app.UseAuthorization();
 app.MapControllers();
 
