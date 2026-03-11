@@ -33,7 +33,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ── Middleware pipeline ───────────────────────────────────
-app.UseMiddleware<ExceptionMiddleware>();    // ← global error handler
+app.UseMiddleware<ExceptionMiddleware>();    //global error handler
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseCors("AllowFrontend");

@@ -1,4 +1,5 @@
-﻿using WorkforceAPI.Domain.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+using WorkforceAPI.Domain.Entities;
 
 namespace WorkforceAPI.Application.DTOs;
 
@@ -31,19 +32,45 @@ public class ProjectMemberDto
 
 public class CreateProjectDto
 {
+    [Required]
+    [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
     public string? Description { get; set; }
+
     public ProjectStatus Status { get; set; } = ProjectStatus.Active;
+
+    [Required]
     public DateTime StartDate { get; set; }
+
     public DateTime? EndDate { get; set; }
+
     public List<int> MemberIds { get; set; } = [];
 }
 
 public class UpdateProjectDto
 {
+    [Required]
+    [MaxLength(200)]
     public string Name { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
     public string? Description { get; set; }
+
     public ProjectStatus Status { get; set; }
+
+    [Required]
     public DateTime StartDate { get; set; }
+
     public DateTime? EndDate { get; set; }
+}
+
+public class AddProjectMemberDto
+{
+    [Range(1, int.MaxValue, ErrorMessage = "EmployeeId is required.")]
+    public int EmployeeId { get; set; }
+
+    [MaxLength(100)]
+    public string Role { get; set; } = "Member";
 }
