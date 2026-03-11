@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using WorkforceAPI.Application.Services;
+﻿using WorkforceAPI.Application.Services;
 using WorkforceAPI.Domain.Entities;
 using WorkforceAPI.Domain.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace WorkforceAPI.Infrastructure.Persistence.MsSqlServer;
 
@@ -31,10 +31,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
 
-        // Application Services
+        // Application services
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<ITaskService, TaskService>();
+        services.AddScoped<IDepartmentService, DepartmentService>();
+        services.AddScoped<IDesignationService, DesignationService>();
 
         return services;
     }
