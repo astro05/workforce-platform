@@ -9,5 +9,4 @@ FROM node:20-alpine AS final
 WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY . .
-EXPOSE 3001
 CMD ["node", "src/index.js"]
