@@ -10,4 +10,5 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
+EXPOSE 8081
 ENTRYPOINT ["dotnet", "AuditWorker.dll"]
