@@ -13,8 +13,18 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5163',
+        target:       'http://localhost:5000',
         changeOrigin: true,
+        secure:       false,
+        configure: (proxy) => {
+          proxy.on('error', (err) => {
+            console.log('proxy error', err)
+          })
+          proxy.on('proxyReq', (_, req) => {
+            console.log('Proxying:', req.method,
+              req.url)
+          })
+        },
       },
     },
   },

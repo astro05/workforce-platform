@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import {
   Table, Button, Input, Select, Space,
-  Tag, Avatar, Typography, Row, Col, Card,
+  Tag, Avatar, Typography, Row, Col,
+  Card, Statistic,
 } from 'antd'
 import {
-  PlusOutlined, SearchOutlined, UserOutlined,
+  PlusOutlined, SearchOutlined,
+  UserOutlined, TeamOutlined,
 } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -77,7 +79,9 @@ export default function EmployeeListPage() {
       render: (_: unknown, record: Employee) => (
         <Space size={[0, 4]} wrap>
           {record.skills.slice(0, 3).map(skill => (
-            <Tag key={skill} color="blue">{skill}</Tag>
+            <Tag key={skill} color="blue">
+              {skill}
+            </Tag>
           ))}
           {record.skills.length > 3 && (
             <Tag>+{record.skills.length - 3}</Tag>
@@ -106,13 +110,20 @@ export default function EmployeeListPage() {
       render: (_: unknown, record: Employee) => (
         <Button
           type="link"
-          onClick={() => navigate(`/employees/${record.id}`)}
+          onClick={e => {
+            e.stopPropagation()
+            navigate(`/employees/${record.id}`)
+          }}
         >
           View
         </Button>
       ),
     },
   ]
+
+  // ── Active count from current page ───────────────────────
+  const activeCount = data?.items.filter(
+    e => e.isActive).length ?? 0
 
   return (
     <div>
@@ -129,6 +140,38 @@ export default function EmployeeListPage() {
           Add Employee
         </Button>
       </div>
+
+      {/* Stats Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="Total Employees"
+              value={data?.totalCount ?? 0}
+              prefix={<TeamOutlined />}
+              valueStyle={{ color: '#1677ff' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="Active (this page)"
+              value={activeCount}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="Departments"
+              value={departments?.length ?? 0}
+              valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       {/* Filters */}
       <Card style={{ marginBottom: 16 }}>
@@ -184,22 +227,23 @@ export default function EmployeeListPage() {
       {/* Table */}
       <Table
         rowKey="id"
-        columns={columns}
+        columns={columns} 
         dataSource={data?.items}
         loading={isLoading}
         pagination={{
-          current:   params.page,
-          pageSize:  params.pageSize,
-          total:     data?.totalCount,
+          current:        params.page,
+          pageSize:       params.pageSize,
+          total:          data?.totalCount,
           showSizeChanger: true,
-          showTotal: (total) =>
+          showTotal:      total =>
             `Total ${total} employees`,
           onChange: (page, pageSize) =>
             setParams(p => ({ ...p, page, pageSize })),
         }}
         onRow={record => ({
-          onClick:        () => navigate(`/employees/${record.id}`),
-          style:          { cursor: 'pointer' },
+          onClick: () =>
+            navigate(`/employees/${record.id}`),
+          style: { cursor: 'pointer' },
         })}
       />
     </div>
