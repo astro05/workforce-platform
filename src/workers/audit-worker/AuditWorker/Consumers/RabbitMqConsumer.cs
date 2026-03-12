@@ -1,6 +1,8 @@
 ﻿using System.Text;
 using System.Text.Json;
+using AuditWorker.Handlers;
 using AuditWorker.Models;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using MongoDB.Driver;
 using Polly;
 using Polly.Retry;
@@ -14,6 +16,7 @@ public class RabbitMqConsumer : BackgroundService
     private readonly ILogger<RabbitMqConsumer> _logger;
     private readonly IConfiguration _config;
     private readonly AuditMongoContext _mongo;
+    private readonly AuditWorkerHealthCheck _health;
 
     private IConnection? _connection;
     private IChannel? _channel;
@@ -23,11 +26,13 @@ public class RabbitMqConsumer : BackgroundService
     public RabbitMqConsumer(
         ILogger<RabbitMqConsumer> logger,
         IConfiguration config,
-        AuditMongoContext mongo)
+        AuditMongoContext mongo,
+        AuditWorkerHealthCheck health)
     {
         _logger = logger;
         _config = config;
         _mongo = mongo;
+        _health = health;
 
         // Polly retry — 3 attempts with exponential backoff
         _retryPolicy = Policy
@@ -49,10 +54,60 @@ public class RabbitMqConsumer : BackgroundService
         // Wait for RabbitMQ to be ready
         await WaitForRabbitMqAsync(ct);
 
-        // Connect
+        // Connect to RabbitMQ
         await ConnectToRabbitMqAsync(ct);
 
-        // Setup consumer
+        // Start consuming messages
+        await StartConsumingAsync(ct);
+
+        // ── Health heartbeat every 60s ────────────────────────
+        _ = Task.Run(async () =>
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try
+                {
+                    // Use HealthHandler to check MongoDB
+                    var result = await _health
+                        .CheckHealthAsync(null!, ct);
+
+                    if (result.Status == HealthStatus.Healthy)
+                    {
+                        _logger.LogInformation(
+                            "[HEALTH] {Description} | " +
+                            "RabbitMQ: {RabbitMq}",
+                            result.Description,
+                            _connection?.IsOpen == true
+                                ? "Connected"
+                                : "Disconnected");
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "[HEALTH] {Description}",
+                            result.Description);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        "[HEALTH] Health check failed: {Error}",
+                        ex.Message);
+                }
+
+                await Task.Delay(
+                    TimeSpan.FromSeconds(60), ct);
+            }
+        }, ct);
+
+        // Keep alive until cancelled
+        while (!ct.IsCancellationRequested)
+            await Task.Delay(1000, ct);
+    }
+
+    // ── Start Consuming ───────────────────────────────────────
+    private async Task StartConsumingAsync(CancellationToken ct)
+    {
         var consumer = new AsyncEventingBasicConsumer(_channel!);
 
         consumer.ReceivedAsync += async (_, args) =>
@@ -83,7 +138,7 @@ public class RabbitMqConsumer : BackgroundService
                     "Failed after retries: {RoutingKey}",
                     args.RoutingKey);
 
-                // Reject — don't requeue
+                // Reject — don't requeue after all retries exhausted
                 await _channel!.BasicNackAsync(
                     deliveryTag: args.DeliveryTag,
                     multiple: false,
@@ -100,27 +155,23 @@ public class RabbitMqConsumer : BackgroundService
 
         _logger.LogInformation(
             "Audit Worker listening on queue: audit-worker");
-
-        // Keep alive until cancelled
-        while (!ct.IsCancellationRequested)
-        {
-            await Task.Delay(1000, ct);
-        }
     }
 
+    // ── Process Message ───────────────────────────────────────
     private async Task ProcessMessageAsync(string message)
     {
         var evt = JsonSerializer.Deserialize<DomainEventMessage>(
             message,
             new JsonSerializerOptions
             {
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = true,
             });
 
         if (evt is null)
         {
             _logger.LogWarning(
-                "Failed to deserialize message: {Message}", message);
+                "Failed to deserialize message: {Message}",
+                message);
             return;
         }
 
@@ -135,12 +186,19 @@ public class RabbitMqConsumer : BackgroundService
             Before = evt.Before,
             After = evt.After,
             OccurredAt = evt.OccurredAt,
-            ProcessedAt = DateTime.UtcNow
+            ProcessedAt = DateTime.UtcNow,
         };
 
         try
         {
             await _mongo.AuditLogs.InsertOneAsync(auditLog);
+
+            _logger.LogInformation(
+                "Audit log saved — {EventType} on " +
+                "{AggregateType}:{AggregateId}",
+                evt.EventType,
+                evt.AggregateType,
+                evt.AggregateId);
         }
         catch (MongoDuplicateKeyException)
         {
@@ -151,17 +209,26 @@ public class RabbitMqConsumer : BackgroundService
         }
     }
 
+    // ── Connect to RabbitMQ ───────────────────────────────────
     private async Task ConnectToRabbitMqAsync(CancellationToken ct)
     {
         var host = _config["RabbitMQ:Host"] ?? "localhost";
+        var port = int.Parse(
+            _config["RabbitMQ:Port"] ?? "5672");
         var username = _config["RabbitMQ:Username"] ?? "admin";
         var password = _config["RabbitMQ:Password"] ?? "admin123";
+        var vhost = _config["RabbitMQ:VirtualHost"] ?? "/";
 
         var factory = new ConnectionFactory
         {
             HostName = host,
+            Port = port,
             UserName = username,
-            Password = password
+            Password = password,
+            VirtualHost = vhost,
+            AutomaticRecoveryEnabled = true,
+            RequestedHeartbeat = TimeSpan.FromSeconds(60),
+            RequestedConnectionTimeout = TimeSpan.FromSeconds(30),
         };
 
         // v7 async API
@@ -200,17 +267,23 @@ public class RabbitMqConsumer : BackgroundService
             cancellationToken: ct);
 
         _logger.LogInformation(
-            "Connected to RabbitMQ at {Host}", host);
+            "Connected to RabbitMQ at {Host}:{Port}",
+            host, port);
     }
 
+    // ── Wait for RabbitMQ ─────────────────────────────────────
     private async Task WaitForRabbitMqAsync(CancellationToken ct)
     {
         var host = _config["RabbitMQ:Host"] ?? "localhost";
+        var port = int.Parse(
+            _config["RabbitMQ:Port"] ?? "5672");
         var username = _config["RabbitMQ:Username"] ?? "admin";
         var password = _config["RabbitMQ:Password"] ?? "admin123";
+        var vhost = _config["RabbitMQ:VirtualHost"] ?? "/";
 
         _logger.LogInformation(
-            "Waiting for RabbitMQ at {Host}...", host);
+            "Waiting for RabbitMQ at {Host}:{Port}...",
+            host, port);
 
         var retries = 0;
 
@@ -221,26 +294,39 @@ public class RabbitMqConsumer : BackgroundService
                 var factory = new ConnectionFactory
                 {
                     HostName = host,
+                    Port = port,
                     UserName = username,
-                    Password = password
+                    Password = password,
+                    VirtualHost = vhost,
+                    AutomaticRecoveryEnabled = true,
+                    RequestedHeartbeat =
+                        TimeSpan.FromSeconds(60),
+                    RequestedConnectionTimeout =
+                        TimeSpan.FromSeconds(30),
                 };
 
-                var testConn = await factory.CreateConnectionAsync(ct);
+                var testConn = await factory
+                    .CreateConnectionAsync(ct);
                 await testConn.CloseAsync();
+
                 _logger.LogInformation("RabbitMQ is ready");
                 return;
             }
-            catch
+            catch (Exception ex)
             {
                 retries++;
                 _logger.LogWarning(
-                    "RabbitMQ not ready — attempt {Attempt}, retrying in 5s...",
-                    retries);
+                    "RabbitMQ not ready — attempt {Attempt}, " +
+                    "retrying in 5s... ({Error})",
+                    retries,
+                    ex.InnerException?.Message ?? ex.Message);
+
                 await Task.Delay(5000, ct);
             }
         }
     }
 
+    // ── Dispose ───────────────────────────────────────────────
     public override void Dispose()
     {
         _channel?.Dispose();

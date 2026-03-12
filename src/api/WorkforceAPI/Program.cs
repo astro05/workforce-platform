@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using WorkforceAPI.API.Middleware;
+using WorkforceAPI.Infrastructure.Messaging;
 using WorkforceAPI.Infrastructure.Persistence.MongoDb;
 using WorkforceAPI.Infrastructure.Persistence.MsSqlServer;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -11,6 +12,9 @@ builder.Services.AddSqlServerPersistence(
     builder.Configuration.GetConnectionString("SqlServer")!
 );
 builder.Services.AddMongoDbPersistence();
+
+// ── Messaging ─────────────────────────────────────────────
+builder.Services.AddMessaging();
 
 // ── API ───────────────────────────────────────────────────
 builder.Services.AddControllers();
