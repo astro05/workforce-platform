@@ -1,6 +1,5 @@
 ﻿using WorkforceAPI.Application.DTOs;
 using WorkforceAPI.Domain.Repositories;
-
 namespace WorkforceAPI.Application.Services;
 
 public class DashboardService : IDashboardService

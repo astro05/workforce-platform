@@ -4,6 +4,5 @@ namespace WorkforceAPI.Application.Services;
 
 public interface IDashboardService
 {
-    Task<DashboardReportDto?> GetReportAsync(
-        CancellationToken ct = default);
+    Task<DashboardReportDto?> GetReportAsync(CancellationToken ct = default);
 }

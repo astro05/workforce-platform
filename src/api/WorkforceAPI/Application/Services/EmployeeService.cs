@@ -1,6 +1,5 @@
 ﻿using WorkforceAPI.Application.DTOs;
 using WorkforceAPI.Domain.Entities;
-using WorkforceAPI.Domain.Events;
 using WorkforceAPI.Domain.Repositories;
 
 namespace WorkforceAPI.Application.Services;
