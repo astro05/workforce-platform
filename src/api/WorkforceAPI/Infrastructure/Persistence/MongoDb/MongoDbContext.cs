@@ -1,4 +1,5 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Driver;
 using WorkforceAPI.Domain.Entities;
 
 namespace WorkforceAPI.Infrastructure.Persistence.MongoDb;
@@ -6,6 +7,20 @@ namespace WorkforceAPI.Infrastructure.Persistence.MongoDb;
 public class MongoDbContext
 {
     private readonly IMongoDatabase _database;
+
+    static MongoDbContext()
+    {
+        // Register camelCase convention globally
+        // so API can read docs written by Node.js report worker
+        var pack = new ConventionPack
+        {
+            new CamelCaseElementNameConvention()
+        };
+        ConventionRegistry.Register(
+            "CamelCase",
+            pack,
+            _ => true);
+    }
 
     public MongoDbContext(IConfiguration configuration)
     {

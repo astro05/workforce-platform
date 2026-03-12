@@ -16,13 +16,20 @@ public class DashboardReportRepository : IDashboardReportRepository
     public async Task<DashboardReport?> GetLatestAsync(
         CancellationToken ct = default)
     {
+        // Try both casing variants since report worker uses camelCase
+        var filter = Builders<DashboardReport>.Filter.Or(
+            Builders<DashboardReport>.Filter.Eq(x => x.ReportKey, "dashboard"),
+            Builders<DashboardReport>.Filter.Eq("reportKey", "dashboard")
+        );
+
         return await _collection
-            .Find(x => x.ReportKey == "dashboard")
+            .Find(filter)
             .FirstOrDefaultAsync(ct);
     }
 
     public async Task UpsertAsync(
-        DashboardReport report, CancellationToken ct = default)
+        DashboardReport report,
+        CancellationToken ct = default)
     {
         report.GeneratedAt = DateTime.UtcNow;
         report.ReportKey = "dashboard";
