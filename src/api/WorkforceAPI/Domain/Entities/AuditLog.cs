@@ -6,8 +6,8 @@ namespace WorkforceAPI.Domain.Entities;
 public class AuditLog
 {
     [BsonId]
-    [BsonRepresentation(BsonType.String)]
-    public string Id { get; set; } = string.Empty;
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
     public string EventType { get; set; } = string.Empty;
     public string AggregateType { get; set; } = string.Empty;

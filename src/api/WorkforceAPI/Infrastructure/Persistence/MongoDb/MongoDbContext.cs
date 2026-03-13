@@ -10,16 +10,14 @@ public class MongoDbContext
 
     static MongoDbContext()
     {
-        // Register camelCase convention globally
-        // so API can read docs written by Node.js report worker
+        // CamelCase convention so .NET reads
+        // documents written by Node.js report worker
         var pack = new ConventionPack
         {
             new CamelCaseElementNameConvention()
         };
         ConventionRegistry.Register(
-            "CamelCase",
-            pack,
-            _ => true);
+            "CamelCase", pack, _ => true);
     }
 
     public MongoDbContext(IConfiguration configuration)
@@ -27,7 +25,8 @@ public class MongoDbContext
         var connectionString = configuration
             .GetConnectionString("Mongo")
             ?? throw new InvalidOperationException(
-                "MongoDB connection string 'Mongo' is not configured.");
+                "MongoDB connection string 'Mongo' " +
+                "is not configured.");
 
         var databaseName = configuration
             .GetConnectionString("MongoDatabaseName")
@@ -41,13 +40,15 @@ public class MongoDbContext
 
     // ── Collections ───────────────────────────────────────────
     public IMongoCollection<LeaveRequest> LeaveRequests
-        => _database.GetCollection<LeaveRequest>("LeaveRequests");
+        => _database.GetCollection<LeaveRequest>(
+            "LeaveRequests");
 
     public IMongoCollection<AuditLog> AuditLogs
         => _database.GetCollection<AuditLog>("AuditLogs");
 
     public IMongoCollection<DashboardReport> DashboardReports
-        => _database.GetCollection<DashboardReport>("DashboardReports");
+        => _database.GetCollection<DashboardReport>(
+            "DashboardReports");
 
     // ── Indexes ───────────────────────────────────────────────
     private void EnsureIndexes()
