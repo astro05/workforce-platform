@@ -6,7 +6,7 @@ namespace WorkforceAPI.Domain.Entities;
 public class LeaveRequest
 {
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
+    [BsonRepresentation(BsonType.String)]
     public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
     public int EmployeeId { get; set; }

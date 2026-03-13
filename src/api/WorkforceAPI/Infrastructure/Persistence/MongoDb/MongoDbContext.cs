@@ -8,16 +8,21 @@ public class MongoDbContext
 {
     private readonly IMongoDatabase _database;
 
+    // ── Static constructor — runs once on first use ────────────
     static MongoDbContext()
     {
-        // CamelCase convention so .NET reads
-        // documents written by Node.js report worker
+        // Register camelCase convention globally so .NET can
+        // read documents written by the Node.js report worker
+        // which serializes field names in camelCase by default
         var pack = new ConventionPack
         {
             new CamelCaseElementNameConvention()
         };
+
         ConventionRegistry.Register(
-            "CamelCase", pack, _ => true);
+            "CamelCase",
+            pack,
+            _ => true);
     }
 
     public MongoDbContext(IConfiguration configuration)
@@ -53,7 +58,7 @@ public class MongoDbContext
     // ── Indexes ───────────────────────────────────────────────
     private void EnsureIndexes()
     {
-        // LeaveRequests
+        // LeaveRequests — index on EmployeeId and Status
         LeaveRequests.Indexes.CreateOne(
             new CreateIndexModel<LeaveRequest>(
                 Builders<LeaveRequest>.IndexKeys
@@ -64,7 +69,8 @@ public class MongoDbContext
                 Builders<LeaveRequest>.IndexKeys
                     .Ascending(x => x.Status)));
 
-        // AuditLogs
+        // AuditLogs — index on AggregateType+AggregateId
+        // and OccurredAt for efficient querying
         AuditLogs.Indexes.CreateOne(
             new CreateIndexModel<AuditLog>(
                 Builders<AuditLog>.IndexKeys
@@ -76,7 +82,8 @@ public class MongoDbContext
                 Builders<AuditLog>.IndexKeys
                     .Descending(x => x.OccurredAt)));
 
-        // DashboardReports — unique on ReportKey
+        // DashboardReports — unique index on ReportKey
+        // ensures only one dashboard document ever exists
         DashboardReports.Indexes.CreateOne(
             new CreateIndexModel<DashboardReport>(
                 Builders<DashboardReport>.IndexKeys
