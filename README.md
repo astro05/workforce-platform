@@ -125,3 +125,91 @@ Node.js powers Worker 2 (Report Scheduler), leveraging its non-blocking I/O mode
 
 ### React + TypeScript
 React with TypeScript delivers a responsive single-page application with component reusability across employee, project, and leave views. TypeScript adds type safety, reducing runtime errors and improving developer experience. Material-UI accelerates development with pre-built components, while React Query simplifies server state management—resulting in a polished, maintainable frontend.
+
+---
+
+# API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| **Audit Logs** |||
+| `GET` | `/api/v1/auditlogs` | Get recent audit logs or logs by entity (use query params) |
+| `GET` | `/api/v1/auditlogs/{aggregateType}/{aggregateId}` | Get audit logs for a specific entity by type and ID |
+| `POST` | `/api/v1/auditlogs` | Insert a new audit log (used internally by workers) |
+| **Dashboard** |||
+| `GET` | `/api/v1/dashboard` | Get the latest dashboard report |
+| **Departments** |||
+| `GET` | `/api/v1/departments` | Get all departments |
+| `GET` | `/api/v1/departments/{id}` | Get a department by ID |
+| `POST` | `/api/v1/departments` | Create a new department |
+| `PUT` | `/api/v1/departments/{id}` | Update an existing department by ID |
+| `DELETE` | `/api/v1/departments/{id}` | Delete a department by ID |
+| **Designations** |||
+| `GET` | `/api/v1/designations` | Get all designations |
+| `GET` | `/api/v1/designations/{id}` | Get a designation by ID |
+| `POST` | `/api/v1/designations` | Create a new designation |
+| `PUT` | `/api/v1/designations/{id}` | Update an existing designation by ID |
+| `DELETE` | `/api/v1/designations/{id}` | Delete a designation by ID |
+| **Employees** |||
+| `GET` | `/api/v1/employees` | Get all employees (supports query params for paging/filtering) |
+| `GET` | `/api/v1/employees/{id}` | Get an employee by ID |
+| `POST` | `/api/v1/employees` | Create a new employee |
+| `PUT` | `/api/v1/employees/{id}` | Update an existing employee by ID |
+| `DELETE` | `/api/v1/employees/{id}` | Delete (soft-delete) an employee by ID |
+| **Leave Requests** |||
+| `GET` | `/api/v1/leaverequests` | Get all leave requests (supports query params) |
+| `GET` | `/api/v1/leaverequests/employee/{employeeId}` | Get leave requests for a specific employee |
+| `GET` | `/api/v1/leaverequests/{id}` | Get a leave request by ID |
+| `POST` | `/api/v1/leaverequests` | Create a new leave request |
+| `PUT` | `/api/v1/leaverequests/{id}/status` | Update the status of a leave request |
+| `PUT` | `/api/v1/leaverequests/{id}/cancel` | Cancel a leave request (requires ActorName query) |
+| **Projects** |||
+| `GET` | `/api/v1/projects` | Get all projects |
+| `GET` | `/api/v1/projects/{id}` | Get a project by ID |
+| `POST` | `/api/v1/projects` | Create a new project |
+| `PUT` | `/api/v1/projects/{id}` | Update an existing project by ID |
+| `POST` | `/api/v1/projects/{id}/members` | Add a member to a project |
+| `DELETE` | `/api/v1/projects/{id}/members/{employeeId}` | Remove a member from a project by employee ID |
+| **Tasks** |||
+| `GET` | `/api/v1/tasks?projectId={id}` | Get all tasks for a specific project (requires ProjectId query param) |
+| `GET` | `/api/v1/tasks/{id}` | Get a task by ID |
+| `POST` | `/api/v1/tasks` | Create a new task |
+| `PUT` | `/api/v1/tasks/{id}` | Update an existing task by ID |
+| `PATCH` | `/api/v1/tasks/{id}/status` | Update the status of a task by ID |
+| `DELETE` | `/api/v1/tasks/{id}` | Delete a task by ID |
+
+---
+
+## Third-Party Library Justifications
+
+| Library | Used In | Reason |
+|---|---|---|
+| `Microsoft.EntityFrameworkCore.SqlServer` | API | Standard EF Core provider for SQL Server, best-in-class .NET ORM |
+| `MongoDB.Driver` | API, Audit Worker | Official MongoDB .NET driver, strong LINQ support |
+| `RabbitMQ.Client` | API, Audit Worker | Official RabbitMQ .NET client, v7 async-first API |
+| `Polly` | Audit Worker | Industry standard .NET resilience library for retry policies |
+| `Serilog` | API, Audit Worker | Structured logging with multiple sinks, better than default ILogger for production |
+| `mssql` | Report Worker | Most widely used SQL Server client for Node.js |
+| `mongodb` | Report Worker | Official MongoDB Node.js driver |
+| `node-cron` | Report Worker | Simple, reliable cron scheduling for Node.js |
+| `pino` | Report Worker | Fastest structured JSON logger for Node.js |
+| `axios` | Frontend | Most popular HTTP client for React, interceptor support |
+| `@tanstack/react-query` | Frontend | Best-in-class server state management for React |
+| `antd` | Frontend | Comprehensive enterprise React UI component library |
+| `recharts` | Frontend | Composable chart library built on D3, React-native API |
+| `dayjs` | Frontend | Lightweight Moment.js replacement for date formatting |
+| `react-router-dom` | Frontend | Standard routing library for React SPAs |
+
+---
+
+### Known Limitations
+- **Security:** Operates without Authentication/Authorization; all endpoints are currently public (JWT implementation planned for production).
+
+- **Database Schema:** Utilizes hand-written EF Core migration files rather than the standard dotnet ef migrations CLI workflow.
+
+- **Resiliency:** The Node.js worker relies on basic polling retries; production would require Dead-Letter Queues (DLQ) for robust error handling.
+
+- **Testing:** End-to-End (E2E) testing is currently absent (Playwright is the intended tool for future stack validation).
+
+- **Performance:** All list views are optimized with Server-Side Pagination to handle large datasets efficiently.
+
