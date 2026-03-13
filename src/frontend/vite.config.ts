@@ -21,11 +21,22 @@ export default defineConfig({
             console.log('proxy error', err)
           })
           proxy.on('proxyReq', (_, req) => {
-            console.log('Proxying:', req.method,
-              req.url)
+            console.log('Proxying:', req.method, req.url)
           })
         },
       },
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1000, // Increase warning limit to 1000 kB
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          antd: ['antd'],
+          // Add more libraries as needed
+        }
+      }
+    }
+  }
 })

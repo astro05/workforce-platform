@@ -12,7 +12,7 @@ import { employeeApi } from '../../api/employees'
 import type { CreateLeaveRequestDto } from '../../types'
 import dayjs from 'dayjs'
 
-const { Title, Text } = Typography
+const { Title} = Typography
 const { Option }      = Select
 const { TextArea }    = Input
 const { RangePicker } = DatePicker
