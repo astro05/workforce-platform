@@ -22,4 +22,7 @@ public class AuditLog
     public string? After { get; set; }
 
     public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+
+    [BsonIgnoreIfNull]
+    public DateTime? ProcessedAt { get; set; }
 }

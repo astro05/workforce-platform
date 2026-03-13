@@ -7,10 +7,14 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(WorkforceDbContext ctx)
     {
-        // Run any pending migrations
-        await ctx.Database.MigrateAsync();
+        // Apply only pending migrations — safe if DB already exists
+        var pending = await ctx.Database
+            .GetPendingMigrationsAsync();
 
-        // Skip if already seeded
+        if (pending.Any())
+            await ctx.Database.MigrateAsync();
+
+        // Skip seeding if data already exists
         if (await ctx.Departments.AnyAsync()) return;
 
         // ── Departments ──────────────────────────────────────────
