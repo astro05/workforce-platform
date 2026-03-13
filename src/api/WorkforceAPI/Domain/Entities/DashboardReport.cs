@@ -6,12 +6,10 @@ namespace WorkforceAPI.Domain.Entities;
 public class DashboardReport
 {
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    [BsonRepresentation(BsonType.String)]
+    public string Id { get; set; } = string.Empty;
 
-    // Fixed key — always "dashboard", used for upsert
     public string ReportKey { get; set; } = "dashboard";
-
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
     public HeadcountStats Headcount { get; set; } = new();
     public ProjectStats Projects { get; set; } = new();

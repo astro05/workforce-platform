@@ -105,7 +105,11 @@ services:
       context: ./src/workers/report-worker
       dockerfile: Dockerfile
     environment:
-      - MSSQL_URL=mssql://sa:${SA_PASSWORD:-Workforce_Pass123}@sqlserver:1433/WorkforceDb
+      - MSSQL_HOST=sqlserver
+      - MSSQL_PORT=1433
+      - MSSQL_DATABASE=WorkforceDb
+      - MSSQL_USER=sa
+      - MSSQL_PASSWORD=${SA_PASSWORD:-Workforce_Pass123}
       - MONGO_URL=mongodb://mongo_user:mongo_pass@mongo:27017/?authSource=admin
       - MONGO_DB_NAME=WorkforceDb
     depends_on:
